@@ -15,8 +15,10 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   const getAccountsServer = typeof accountsServerProvider === 'function' ?
     (req, res) => accountsServerProvider(req, res) : () => accountsServerProvider;
 
+  console.log("8");
   // eslint-disable-next-line new-cap
   const router = express.Router();
+    console.log("9");
 
   const sendError = (res, err) => res.status(400).json({
     message: err.message,

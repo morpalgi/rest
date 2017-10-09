@@ -1,6 +1,6 @@
 {
-  "name": "@accounts/rest-express",
-  "version": "0.0.12",
+  "name": "accounts-rest-promise-support",
+  "version": "0.0.23",
   "description": "Server side REST express middleware for accounts",
   "main": "lib/index.js",
   "jsnext:main": "lib-es6/index.js",
