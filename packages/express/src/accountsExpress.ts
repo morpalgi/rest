@@ -14,15 +14,27 @@ const getUserAgent = req => {
 };
 
 const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
+  console.log('in accountExpress');
   const getAccountsServer = async (req,res) => {
+    console.log('#1');
       if (typeof accountsServerProvider === 'function') {
+          console.log('#2');
           return accountsServerProvider(req, res);
       } else if(Promise.resolve(accountsServerProvider) === accountsServerProvider) {
-          return await accountsServerProvider(req, res);
+        try {
+            console.log('#3');
+            return await accountsServerProvider(req, res);
+        }
+        catch (e){
+          console.log('e', e);
+        }
       } else {
+          console.log('#4');
           return accountsServerProvider;
       };
   };
+
+    console.log('#5');
 
   const router = express.Router();
 
