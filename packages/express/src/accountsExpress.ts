@@ -10,13 +10,19 @@ const getUserAgent = req => {
     userAgent = req.headers['x-ucbrowser-ua'];
   }
   return userAgent;
+
 };
 
 const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
-  const getAccountsServer =
-    typeof accountsServerProvider === 'function'
-      ? (req, res) => accountsServerProvider(req, res)
-      : () => accountsServerProvider;
+  const getAccountsServer = async (req,res) => {
+      if (typeof accountsServerProvider === 'function') {
+          return accountsServerProvider(req, res);
+      } else if(Promise.resolve(accountsServerProvider) === accountsServerProvider) {
+          return await accountsServerProvider(req, res);
+      } else {
+          return accountsServerProvider;
+      };
+  };
 
   const router = express.Router();
 
@@ -33,12 +39,12 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
       get(req.body, 'accessToken', undefined);
     if (!isEmpty(accessToken)) {
       try {
-        const accountsServer = getAccountsServer(req, res);
+        const accountsServer = await getAccountsServer(req, res);
         const user = await accountsServer.resumeSession(accessToken);
         req.user = user;
         req.userId = user.id;
       } catch (e) {
-        console.log('Failed to resume session');
+          console.log('Failed to resume session');
       }
     }
     next();
@@ -49,7 +55,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
       const { user, password } = req.body;
       const userAgent = getUserAgent(req);
       const ip = requestIp.getClientIp(req);
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       const loggedInUser = await accountsServer.loginWithPassword(
         user,
         password,
@@ -67,7 +73,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
       const { username, accessToken } = req.body;
       const userAgent = getUserAgent(req);
       const ip = requestIp.getClientIp(req);
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       const impersonateRes = await accountsServer.impersonate(
         accessToken,
         username,
@@ -83,7 +89,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}getUser`, async (req, res) => {
     try {
       const { accessToken } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       const user = await accountsServer.resumeSession(accessToken);
       res.json(user);
     } catch (err) {
@@ -92,7 +98,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   });
 
   router.post(`${path}createUser`, async (req, res) => {
-    const accountsServer = getAccountsServer(req, res);
+    const accountsServer = await getAccountsServer(req, res);
     if (accountsServer.options().forbidClientAccountCreation) {
       sendError(res, new AccountsError('Client account creation is forbidden'));
     }
@@ -111,7 +117,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
       const { accessToken, refreshToken } = req.body;
       const userAgent = getUserAgent(req);
       const ip = requestIp.getClientIp(req);
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       const refreshedSession = await accountsServer.refreshTokens(
         accessToken,
         refreshToken,
@@ -127,7 +133,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}logout`, async (req, res) => {
     try {
       const { accessToken } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       await accountsServer.logout(accessToken);
       res.json({ message: 'Logged out' });
     } catch (err) {
@@ -138,7 +144,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}verifyEmail`, async (req, res) => {
     try {
       const { token } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       await accountsServer.verifyEmail(token);
       res.json({ message: 'Email verified' });
     } catch (err) {
@@ -149,7 +155,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}resetPassword`, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer =await getAccountsServer(req, res);
       await accountsServer.resetPassword(token, newPassword);
       res.json({ message: 'Password changed' });
     } catch (err) {
@@ -160,7 +166,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}sendVerificationEmail`, async (req, res) => {
     try {
       const { email } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer =await getAccountsServer(req, res);
       await accountsServer.sendVerificationEmail(email);
       res.json({ message: 'Email sent' });
     } catch (err) {
@@ -171,7 +177,7 @@ const accountsExpress = (accountsServerProvider, { path = '/accounts/' }) => {
   router.post(`${path}sendResetPasswordEmail`, async (req, res) => {
     try {
       const { email } = req.body;
-      const accountsServer = getAccountsServer(req, res);
+      const accountsServer = await getAccountsServer(req, res);
       await accountsServer.sendResetPasswordEmail(email);
       res.json({ message: 'Email sent' });
     } catch (err) {
